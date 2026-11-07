@@ -1,6 +1,4 @@
-import json
-import os
-from random import choice
+import sqlite3
 
 
 class Task:
@@ -9,117 +7,58 @@ class Task:
         self.title = title
         self.done = done
 
-
     def __str__(self):
         check = "[x]" if self.done else "[ ]"
         return f"{self.id}. {check} {self.title}"
 
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "title": self.title,
-            "done": self.done
-        }
-
-
 class TaskManager:
     def __init__(self):
-        self.tasks = []
-        self.next_id = 1
+        # Подключаемся к базе данных
+        self.conn = sqlite3.connect("tasks.db")
+        # Чтобы можно было обращаться к полям по имени (row["title"])
+        self.conn.row_factory = sqlite3.Row
+        # ВОТ ОНО - создание того самого cursor, на который ругается PyCharm
+        self.cursor = self.conn.cursor()
+
+        # Создаем таблицу, если ее нет
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                done BOOLEAN NOT NULL DEFAULT 0
+            )
+        """)
+        self.conn.commit()
+
+    def get_tasks(self):
+        # Достаем все задачи из базы и превращаем их в объекты Task
+        self.cursor.execute("SELECT * FROM tasks")
+        rows = self.cursor.fetchall()
+        return [Task(row["id"], row["title"], bool(row["done"])) for row in rows]
 
     def add_task(self, title):
-        mew_task = Task(self.next_id, title)
-        self.tasks.append(mew_task)
-        self.next_id += 1
-        print(f'Задача "{title}" добавлена')
-        self.save_task()
-
+        self.cursor.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", (title, False))
+        self.conn.commit()
+        print(f'Задача "{title}" добавлена.')
 
     def show_tasks(self):
-        if not self.tasks:
+        # Используем get_tasks для вывода в консоль (если запустим отдельно)
+        tasks = self.get_tasks()
+        if not tasks:
             print("Список задач пуст.")
             return
 
         print("\n=== СПИСОК ЗАДАЧ ===")
-        for task in self.tasks:
+        for task in tasks:
             print(task)
 
-
     def mark_done(self, task_id):
-        for task in self.tasks:
-            if task.id == task_id:
-                task.done = True
-                print(f'Задача "{task.title}" отмечена выполненной.')
-                self.save_task()
-                return
-            print("Задача с таким id не найдена")
+        self.cursor.execute("UPDATE tasks SET done = 1 WHERE id = ?", (task_id,))
+        self.conn.commit()
+        print(f'Задача {task_id} отмечена выполненной.')
 
     def delete_task(self, task_id):
-        for i, task in enumerate(self.tasks):
-            if task.id == task_id:
-                del self.tasks[i]
-                print(f'Задача "{task.title}" удалена.')
-                self.save_task()
-                return
-            print("Задача с таким id не найдена.")
-
-
-    def save_task(self):
-        data = [task.to_dict() for task in self.tasks]
-        with open('tasks.json', 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-    def load_tasks(self):
-        if not os.path.exists("tasks.json"):
-            return
-
-        with open('tasks.json', 'r', encoding='utf-8') as f:
-            data = json.load(f)
-
-        self.tasks = []
-        for item in data:
-            task = Task(item["id"], item["title"], item["done"])
-            self.tasks.append(task)
-
-        if self.tasks:
-            self.next_id = max(task.id for task in self.tasks) + 1
-
-
-
-def main():
-
-    manager = TaskManager()
-    manager.load_tasks()
-
-
-    while True:
-        print("\n=== МОИ ЗАДАЧИ ===")
-        print("1. Показать задачи")
-        print("2. Добавить задачу")
-        print("3. Отметить выполненной")
-        print("4. Удалить задачу")
-        print("5. Выход")
-
-        choice = input("Выбери меня: ")
-
-        if choice == "1":
-            manager.show_tasks()
-        elif choice == "2":
-            title = input('Название задачи: ')
-            manager.add_task(title)
-        elif choice == "3":
-            task_id = int(input("Введите id задачи: "))
-            manager.mark_done(task_id)
-        elif choice == "4":
-            task_id = int(input('Введите id задачи для удаления: '))
-            manager.delete_task(task_id)
-        elif choice == "5":
-            print('Пока!')
-            break
-        else:
-            print('Нет такого пункта, попробуйте еще раз.')
-
-if __name__ == '__main__':
-    main()
+        self.cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        self.conn.commit()
+        print(f'Задача {task_id} удалена.')
