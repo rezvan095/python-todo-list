@@ -13,9 +13,9 @@ class Task:
 
 
 class TaskManager:
-    def __init__(self):
+    def __init__(self, db_name="tasks.db"):
         # Подключаемся к базе данных
-        self.conn = sqlite3.connect("tasks.db")
+        self.conn = sqlite3.connect(db_name)
         # Чтобы можно было обращаться к полям по имени (row["title"])
         self.conn.row_factory = sqlite3.Row
         # ВОТ ОНО - создание того самого cursor, на который ругается PyCharm
