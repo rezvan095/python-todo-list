@@ -53,12 +53,26 @@ class TaskManager:
         for task in tasks:
             print(task)
 
+
     def mark_done(self, task_id):
         self.cursor.execute("UPDATE tasks SET done = 1 WHERE id = ?", (task_id,))
         self.conn.commit()
-        print(f'Задача {task_id} отмечена выполненной.')
+
+        # Проверяем, изменилась ли хоть одна строка
+        if self.cursor.rowcount > 0:
+            print(f'Задача {task_id} отмечена выполненной.')
+            return True
+        else:
+            print(f'Задача с ID {task_id} не найдена.')
+            return False
 
     def delete_task(self, task_id):
         self.cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
         self.conn.commit()
-        print(f'Задача {task_id} удалена.')
+
+        if self.cursor.rowcount > 0:
+            print(f'Задача {task_id} удалена.')
+            return True
+        else:
+            print(f'Задача с ID {task_id} не найдена.')
+            return False

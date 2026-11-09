@@ -4,3 +4,4 @@ __pycache__/
 tasks.json
 .idea/
 .env
+.pytest_cache/
