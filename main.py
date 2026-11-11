@@ -91,4 +91,13 @@ def update_task(task_id: int, task: TaskUpdate):
         return {"error": f"Задача с ID {task_id} не найдена."}
 
 
+# --- ЭНДПОИНТ ДЛЯ ОТМЕТКИ ВЫПОЛНЕННОЙ ---
+@app.put("/tasks/{task_id}/done")
+def mark_task_done(task_id: int):
+    # Вызываем метод из TaskManager, который возвращает True или False
+    result = manager.mark_done(task_id)
 
+    if result:
+        return {"message": f"Задача {task_id} отмечена выполненной."}
+    else:
+        return {"error": f"Задача с ID {task_id} не найдена."}

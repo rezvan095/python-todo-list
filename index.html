@@ -31,21 +31,35 @@
         const API_URL = "http://127.0.0.1:8000/tasks";
 
         // Функция для загрузки задач с сервера
-        async function loadTasks() {
+                async function loadTasks() {
             const response = await fetch(API_URL);
             const tasks = await response.json();
 
             const list = document.getElementById("taskList");
-            list.innerHTML = ""; // Очищаем список перед обновлением
+            list.innerHTML = "";
 
             tasks.forEach(task => {
                 const li = document.createElement("li");
+
+                // Если задача выполнена, кнопку "Сделано" не показываем
+                let statusButton = task.done ? "" : `<button onclick="markDone(${task.id})" style="background-color: #007bff; margin-right: 5px;">Сделано</button>`;
+
                 li.innerHTML = `
                     <span class="${task.done ? 'done' : ''}">${task.title}</span>
-                    <button onclick="deleteTask(${task.id})" style="background-color: #dc3545;">Удалить</button>
+                    <div>
+                        ${statusButton}
+                        <button onclick="deleteTask(${task.id})" style="background-color: #dc3545;">Удалить</button>
+                    </div>
                 `;
                 list.appendChild(li);
             });
+        }
+
+
+         // Функция для отметки задачи выполненной
+        async function markDone(id) {
+            await fetch(`${API_URL}/${id}/done`, { method: "PUT" });
+            loadTasks(); // Обновляем список
         }
 
         // Функция для добавления новой задачи

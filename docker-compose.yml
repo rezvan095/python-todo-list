@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # 1. Веб-сервер (FastAPI)
+  api:
+    build: .  # Собрать образ из текущей папки (Dockerfile)
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000" # Пробросить порт 8000 из контейнера на твой компьютер
+    volumes:
+      - ./tasks.db:/app/tasks.db # Важно! Сохраняем базу данных, чтобы она не удалялась
+    env_file:
+      - .env # Передаем секретные переменные (токен)
+
+  # 2. Telegram-бот
+  bot:
+    build: .
+    command: python bot.py
+    volumes:
+      - ./tasks.db:/app/tasks.db # Оба контейнера используют ОДНУ базу данных
+    env_file:
+      - .env
