@@ -1,10 +1,19 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from test_todo import TaskManager
+from fastapi.middleware.cors import CORSMiddleware  # Новый импорт
+from todo_oop import TaskManager
+
 
 
 # Создаем приложения FastAPI
 app = FastAPI(title="Мой ToDo API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 
 # Подключаем наш манаджер (он автоматически подцепит базу tasks.db)
@@ -54,7 +63,7 @@ def create_task(task: TaskCreate):
 
 # --- ЭНДПОИНТ ДЛЯ УДАЛЕНИЯ ---
 # {task_id} в пути означает, что мы будем передавать ID прямо в URL (например, /tasks/5)
-@app.delete("/tasks/{task_id")
+@app.delete("/tasks/{task_id}")
 def delete_task(task_id: int):
     result = manager.delete_task(task_id)
     if result:

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мой ToDo Сайт</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; background-color: #f4f4f9; }
+        h1 { color: #333; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="text"] { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #218838; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: white; padding: 15px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; }
+        .done { text-decoration: line-through; color: gray; }
+    </style>
+</head>
+<body>
+    <h1>Мои задачи</h1>
+
+    <div class="input-group">
+        <input type="text" id="taskInput" placeholder="Что нужно сделать?">
+        <button onclick="addTask()">Добавить</button>
+    </div>
+
+    <ul id="taskList">
+        <!-- Сюда будут загружаться задачи -->
+    </ul>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000/tasks";
+
+        // Функция для загрузки задач с сервера
+        async function loadTasks() {
+            const response = await fetch(API_URL);
+            const tasks = await response.json();
+
+            const list = document.getElementById("taskList");
+            list.innerHTML = ""; // Очищаем список перед обновлением
+
+            tasks.forEach(task => {
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    <span class="${task.done ? 'done' : ''}">${task.title}</span>
+                    <button onclick="deleteTask(${task.id})" style="background-color: #dc3545;">Удалить</button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // Функция для добавления новой задачи
+        async function addTask() {
+            const input = document.getElementById("taskInput");
+            const title = input.value;
+            if (!title) return; // Если поле пустое, ничего не делаем
+
+            await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title: title })
+            });
+
+            input.value = ""; // Очищаем поле ввода
+            loadTasks(); // Обновляем список на экране
+        }
+
+        // Функция для удаления задачи
+        async function deleteTask(id) {
+            await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+            loadTasks(); // Обновляем список
+        }
+
+        // При загрузке страницы сразу показываем задачи
+        loadTasks();
+    </script>
+</body>
+</html>
